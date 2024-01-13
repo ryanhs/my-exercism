@@ -3,6 +3,7 @@ go 1.21.0
 use (
 	./go/chessboard
 	./go/election-day
+	./go/elons-toys
 	./go/gross-store
 	./go/logs-logs-logs
 )
