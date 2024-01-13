@@ -1,8 +1,5 @@
 go 1.21.0
 
 use (
-	./go/animal-magic
-	./go/bird-watcher
-	./go/blackjack
-	./go/interest-is-interesting
+	./go/lasagna-master
 )
