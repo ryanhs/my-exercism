@@ -1,6 +1,7 @@
 go 1.21.0
 
 use (
+	./go/airport-robot
 	./go/census
 	./go/chessboard
 	./go/election-day
