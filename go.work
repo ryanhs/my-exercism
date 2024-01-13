@@ -1,8 +1,5 @@
 go 1.21.0
 
 use (
-	./go/meteorology
-	./go/parsing-log-files
-	./go/sorting-room
-	./go/the-farm
+	./go/expenses
 )
