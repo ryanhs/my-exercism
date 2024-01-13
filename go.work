@@ -1,5 +1,6 @@
 go 1.21.0
 
 use (
+	./go/booking-up-for-beauty
 	./go/lasagna-master
 )
