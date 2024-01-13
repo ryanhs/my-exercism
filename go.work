@@ -1,5 +1,6 @@
 go 1.21.0
 
 use (
-	./go/vehicle-purchase
+	./go/bird-watcher
+	./go/blackjack
 )
