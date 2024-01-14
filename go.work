@@ -1,5 +1,7 @@
 go 1.21.0
 
 use (
-	./go/expenses
+	./go/kindergarten-garden
+	./go/raindrops
+	./go/strain
 )
