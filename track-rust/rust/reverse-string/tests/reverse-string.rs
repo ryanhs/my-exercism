@@ -7,6 +7,14 @@ fn an_empty_string() {
 }
 
 #[test]
+fn olleh() {
+    let input = "hello";
+    let output = reverse_string::reverse(input);
+    let expected = "olleh";
+    assert_eq!(output, expected);
+}
+
+#[test]
 #[ignore]
 fn a_word() {
     let input = "robot";
