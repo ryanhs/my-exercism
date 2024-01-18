@@ -6,12 +6,14 @@
 	"image": "mcr.microsoft.com/devcontainers/rust:1-1-bookworm",
 
 	// Use 'mounts' to make the cargo cache persistent in a Docker Volume.
-	"mounts": [
-    "source=${localEnv:USERPROFILE}/Downloads,target=/Downloads,type=bind"
-	],
+	// "mounts": [
+    // "source=${localEnv:USERPROFILE}/Downloads,target=/Downloads,type=bind"
+	// ],
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
-	// "features": {},
+	"features": {
+    "ghcr.io/devcontainers-contrib/features/exercism-cli:1": {}
+  },
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
