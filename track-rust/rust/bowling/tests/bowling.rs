@@ -1,6 +1,32 @@
 use bowling::*;
 
 #[test]
+fn roll_returns_a_result111111111() {
+    let mut game = BowlingGame::new();
+    
+    let _ = game.roll(0);
+    let _ = game.roll(7);
+
+    let _ = game.roll(2);
+    let _ = game.roll(8);
+
+    let _ = game.roll(3);
+    let _ = game.roll(4);
+
+    let _ = game.roll(10);
+
+    let _ = game.roll(4);
+    let _ = game.roll(6);
+
+    let _ = game.roll(1);
+    let _ = game.roll(2);
+
+    assert!(game.score().is_none());
+}
+
+
+#[test]
+#[ignore]
 fn roll_returns_a_result() {
     let mut game = BowlingGame::new();
     assert!(game.roll(0).is_ok());

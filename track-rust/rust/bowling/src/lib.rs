@@ -1,5 +1,3 @@
-use std::fmt::{self};
-
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Error {
@@ -7,65 +5,216 @@ pub enum Error {
     GameComplete,
 }
 
-pub struct BowlingFrame {
-    scores: Vec<u16>,
-    current_pins_left: u16,
+#[derive(PartialEq)]
+pub enum WhichThrow {
+    FirstThrow,
+    SecondThrow,
 }
 
 
-impl BowlingFrame {
-    pub fn new() -> Self {
-        Self {
-            current_pins_left: 10,
-            scores: Vec::new(),
-        }
-    }
-}
+// https://www.bowlinggenius.com/
 
-impl fmt::Debug for BowlingFrame {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "scores {:?} => {}", self.scores, self.current_pins_left)
-    }
-}
+const TOTAL_PINS: u16 = 10;
+const STRIKE: u16 = 10;
+const NORMAL_FRAMES: usize = 10;
 
 pub struct BowlingGame {
-    current_frame: usize,
-    frames: Vec<BowlingFrame>,
-    
-    is_finished: bool,
+    frame_i : usize,
+    which_throw: WhichThrow,
+    pins_remaining: u16,
+    pins_down: Vec<u16>,
 }
 
 impl BowlingGame {
     pub fn new() -> Self {
-        Self {
-            frames: vec![BowlingFrame::new()],
-            current_frame: 0,
-            is_finished: false,
+        BowlingGame {
+            frame_i: 0,
+            which_throw: WhichThrow::FirstThrow,
+            pins_remaining: TOTAL_PINS,
+            pins_down: Vec::with_capacity((NORMAL_FRAMES * 2) + 4), // +2 frame for double strike in the end
         }
     }
 
-    fn current_frame_pins_remaining(&mut self) -> u16{
-        if self.current_frame < self.frames.len() {
-            return 0;
+    pub fn is_done(&self) -> bool {
+        if self.frame_i <= 9 {
+            return false;
         }
 
-        self.frames[self.current_frame].current_pins_left
+        let last_throw_i: usize = (9 * 2) as usize;
+        let last_frame_first: u16 = self.pins_down[last_throw_i];
+        let last_frame_second: u16 = self.pins_down[last_throw_i + 1];
+        let last_frame_final = last_frame_first + last_frame_second;
+
+        // next 1 frame due to great score
+        if self.frame_i == NORMAL_FRAMES {
+            
+            let is_first_throw = self.pins_down.len() == NORMAL_FRAMES * 2;
+
+            // last frame is strike / spare
+            if last_frame_final == TOTAL_PINS && is_first_throw {
+                return false;
+            }
+
+            // last frame is strike exclusively, oke for 2 throw
+            if last_frame_first == STRIKE {
+                return false;
+            }
+        }
+
+        // next 2 frame due to double strike score
+        if self.frame_i == 11 && last_frame_first == TOTAL_PINS {
+            
+            let is_first_throw = self.pins_down.len() == 11 * 2;
+
+            let last_bonus_frame: u16 = self.pins_down[last_throw_i + 2];
+
+            if last_bonus_frame == STRIKE && is_first_throw {
+                return false;
+            }
+        }
+
+        true
     }
 
     pub fn roll(&mut self, pins: u16) -> Result<(), Error> {
-        if pins > 10 || pins > self.current_frame_pins_remaining() {
+        if pins > self.pins_remaining {
             return Err(Error::NotEnoughPinsLeft);
         }
-
-        let current_frame = &mut self.frames[self.current_frame];
         
-        current_frame.scores.push(pins);
-        current_frame.current_pins_left -= pins;
+        if self.is_done() {
+            return Err(Error::GameComplete);
+        }
+        
+        self.pins_down.push(pins);
 
-        Ok(())
+        let mut make_new_frame = self.which_throw == WhichThrow::SecondThrow;
+
+        // finisher throw, new frame
+        if self.pins_remaining == pins {
+
+            // strike / spare, 
+            if self.which_throw == WhichThrow::FirstThrow {
+                self.pins_down.push(0);
+                make_new_frame = true;
+            }
+        }
+
+        println!("# frame: {}, pins: {}", self.frame_i + 1, pins);
+        self.print_score_board();
+
+        // new frame
+        if make_new_frame {
+            self.pins_remaining = TOTAL_PINS;
+            self.frame_i += 1;
+            self.which_throw = WhichThrow::FirstThrow;
+        }
+
+        // next throw in current frame
+        else if self.which_throw == WhichThrow::FirstThrow {
+            self.which_throw = WhichThrow::SecondThrow;
+            self.pins_remaining -= pins;
+        }
+
+        println!("");
+
+        return Ok(());
+    }
+
+    pub fn print_score_board(&self) {
+        for i in 0..(self.frame_i + 1) {
+            // println!("print_score_board {}", i);
+            let first_throw_i: usize = ((i) * 2) as usize;
+            let first_throw = self.pins_down[first_throw_i];
+
+            let second_throw_i = first_throw_i + 1;
+            let frame_score = self.score_at_frame(i);
+
+            if (self.pins_down.len() - 1) < second_throw_i {
+                print!("[{},  ]({}) ", first_throw, frame_score);
+                continue;
+            } else {
+                let second_throw = self.pins_down[second_throw_i];
+
+                if second_throw == 0 {
+                    print!("[{}, -]({}) ", first_throw, frame_score);
+                } else {
+                    print!("[{}, {}]({}) ", first_throw, second_throw, frame_score);
+                }
+            }
+        }
+    }
+
+    
+
+    pub fn score_at_frame(&self, frame_i: usize) -> u16 {
+        let first_throw_i = (frame_i * 2) as usize;
+
+        // out of index
+        if self.pins_down.len() < first_throw_i + 1 {
+            return 0;
+        }
+
+        let first_throw = self.pins_down[first_throw_i];
+
+        // if strike
+        if first_throw == STRIKE {
+            let mut final_score: u16 = TOTAL_PINS;
+            let next_throw_i = first_throw_i + 2;
+            let next_throw_pins = if self.pins_down.len() > next_throw_i { self.pins_down[next_throw_i] } else { 0 };
+
+            final_score += next_throw_pins;
+
+            // double strike
+            if next_throw_pins == STRIKE {
+                let next_next_throw_i = first_throw_i + 4;
+                let next_next_throw_pins = if self.pins_down.len() > next_next_throw_i { self.pins_down[next_next_throw_i] } else { 0 };
+                final_score += next_next_throw_pins;
+            } else {
+                let next_next_throw_i = first_throw_i + 3;
+                let next_next_throw_pins = if self.pins_down.len() > next_next_throw_i { self.pins_down[next_next_throw_i] } else { 0 };
+                final_score += next_next_throw_pins;
+            }
+
+            return final_score;
+        }
+
+        let second_throw_i = first_throw_i + 1;
+
+        // frame still in progress, second throw not yet thrown
+        if (self.pins_down.len() - 1) < second_throw_i {
+            return 0;
+        }
+
+        let second_throw = self.pins_down[second_throw_i];
+        let mut final_score = first_throw + second_throw;
+
+        // if spare
+        if final_score == TOTAL_PINS {
+            let next_throw_i = second_throw_i + 1;
+            let next_throw_pins = if self.pins_down.len() > next_throw_i { self.pins_down[next_throw_i] } else { 0 };
+            final_score += next_throw_pins
+        }
+
+        final_score
     }
 
     pub fn score(&self) -> Option<u16> {
-        todo!("Return the score if the game is complete, or None if not.");
+        if !self.is_done() {
+            return None;
+        }
+
+        let mut scores: Vec<u16> = Vec::with_capacity(20);
+
+        for i in 0..(self.frame_i + 1) {
+            let tmp_frame_score = self.score_at_frame(i);
+
+            if i <= 9 {
+                scores.push(tmp_frame_score);
+            }
+        }
+
+        // println!("> scores: {:?}", scores);
+
+        Some(scores.iter().sum())
     }
 }
